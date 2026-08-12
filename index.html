@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fraud Detection Demo</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 650px; margin: 40px auto; padding: 0 20px; background: #f7f7f5; }
+  .card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  button, a.btn { display: inline-block; margin-top: 12px; padding: 10px 16px; background: #2a78d6; color: white; border: none; border-radius: 8px; cursor: pointer; text-decoration: none; font-size: 0.9rem; }
+  table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.85rem; }
+  th, td { padding: 6px 8px; border-bottom: 1px solid #eee; text-align: left; }
+  .fraud { color: #c0392b; font-weight: bold; }
+  .genuine { color: #1e8449; }
+</style>
+</head>
+<body>
+  <h1>💳 Credit Card Fraud Detector</h1>
+  <div class="card">
+    <p>LightGBM model trained with SMOTE on 283K+ real transactions (99.83% imbalance). Upload a CSV of transactions to get fraud predictions for every row.</p>
+
+    <label>API URL</label><br>
+    <input id="apiUrl" style="width:100%; padding:8px;" value="https://YOUR-RENDER-URL.onrender.com/predict_batch">
+
+    <p><a class="btn" href="sample_transactions.csv" download>⬇ Download Sample CSV</a></p>
+
+    <input type="file" id="csvFile" accept=".csv"><br>
+    <button onclick="predictBatch()">Upload & Predict</button>
+
+    <div id="results"></div>
+  </div>
+
+<script>
+async function predictBatch() {
+  const fileInput = document.getElementById('csvFile');
+  const apiUrl = document.getElementById('apiUrl').value;
+  if (!fileInput.files.length) { alert('Choose a CSV first'); return; }
+
+  const formData = new FormData();
+  formData.append('file', fileInput.files[0]);
+
+  document.getElementById('results').innerHTML = 'Predicting...';
+
+  try {
+    const res = await fetch(apiUrl.replace('/predict', '/predict_batch'), {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+
+    let html = `<p>${data.count} transactions scored.</p><table><tr><th>Row</th><th>Fraud Probability</th><th>Verdict</th></tr>`;
+    data.predictions.forEach(p => {
+      html += `<tr><td>${p.row}</td><td>${(p.fraud_probability*100).toFixed(2)}%</td><td class="${p.is_fraud ? 'fraud' : 'genuine'}">${p.is_fraud ? '⚠️ Fraud' : '✅ Genuine'}</td></tr>`;
+    });
+    html += '</table>';
+    document.getElementById('results').innerHTML = html;
+  } catch (e) {
+    document.getElementById('results').innerHTML = 'Error: ' + e.message;
+  }
+}
+</script>
+</body>
+</html>
