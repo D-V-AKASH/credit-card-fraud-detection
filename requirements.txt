@@ -5,3 +5,4 @@ lightgbm
 joblib
 pandas
 numpy
+python-multipart
