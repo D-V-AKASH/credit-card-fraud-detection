@@ -14,13 +14,14 @@
 </style>
 </head>
 <body>
-  <h1>💳 Credit Card Fraud Detector</h1>
+  <h1>Credit Card Fraud Detector</h1>
   <div class="card">
     <p>LightGBM model trained with SMOTE on 283K+ real transactions (99.83% imbalance). Upload a CSV of transactions to get fraud predictions for every row.</p>
 
     <label>API URL</label><br>
-<input id="apiUrl" style="width:100%; padding:8px;" value="https://credit-card-fraud-detection-1-92gz.onrender.com/predict_batch">
-    <p><a class="btn" href="sample_transactions.csv" download>⬇ Download Sample CSV</a></p>
+    <input id="apiUrl" style="width:100%; padding:8px;" value="https://credit-card-fraud-detection-1-92gz.onrender.com/predict_batch">
+
+    <p><a class="btn" href="sample_transactions.csv" download>Download Sample CSV</a></p>
 
     <input type="file" id="csvFile" accept=".csv"><br>
     <button onclick="predictBatch()">Upload & Predict</button>
@@ -40,15 +41,22 @@ async function predictBatch() {
   document.getElementById('results').innerHTML = 'Predicting...';
 
   try {
-    const res = await fetch(apiUrl{
+    const res = await fetch(apiUrl, {
       method: 'POST',
       body: formData
     });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      document.getElementById('results').innerHTML = 'Server error: ' + errText;
+      return;
+    }
+
     const data = await res.json();
 
-    let html = `<p>${data.count} transactions scored.</p><table><tr><th>Row</th><th>Fraud Probability</th><th>Verdict</th></tr>`;
-    data.predictions.forEach(p => {
-      html += `<tr><td>${p.row}</td><td>${(p.fraud_probability*100).toFixed(2)}%</td><td class="${p.is_fraud ? 'fraud' : 'genuine'}">${p.is_fraud ? '⚠️ Fraud' : '✅ Genuine'}</td></tr>`;
+    let html = '<p>' + data.count + ' transactions scored.</p><table><tr><th>Row</th><th>Fraud Probability</th><th>Verdict</th></tr>';
+    data.predictions.forEach(function(p) {
+      html += '<tr><td>' + p.row + '</td><td>' + (p.fraud_probability * 100).toFixed(2) + '%</td><td class="' + (p.is_fraud ? 'fraud' : 'genuine') + '">' + (p.is_fraud ? 'Fraud' : 'Genuine') + '</td></tr>';
     });
     html += '</table>';
     document.getElementById('results').innerHTML = html;
