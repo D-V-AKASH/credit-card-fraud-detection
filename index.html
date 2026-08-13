@@ -40,7 +40,7 @@ async function predictBatch() {
   document.getElementById('results').innerHTML = 'Predicting...';
 
   try {
-    const res = await fetch(apiUrl.replace('/predict', '/predict_batch'), {
+    const res = await fetch(apiUrl{
       method: 'POST',
       body: formData
     });
