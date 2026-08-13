@@ -2,66 +2,168 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Fraud Detection Demo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fraud Detection — Live Model Demo</title>
 <style>
-  body { font-family: system-ui, sans-serif; max-width: 650px; margin: 40px auto; padding: 0 20px; background: #f7f7f5; }
-  .card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-  button, a.btn { display: inline-block; margin-top: 12px; padding: 10px 16px; background: #2a78d6; color: white; border: none; border-radius: 8px; cursor: pointer; text-decoration: none; font-size: 0.9rem; }
-  table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.85rem; }
-  th, td { padding: 6px 8px; border-bottom: 1px solid #eee; text-align: left; }
-  .fraud { color: #c0392b; font-weight: bold; }
-  .genuine { color: #1e8449; }
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #0b0f0d;
+    --panel: #101512;
+    --border: #1f2b25;
+    --text: #e6ede9;
+    --text-dim: #7c8a83;
+    --safe: #3ddc84;
+    --alert: #ff5d5d;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; min-height:100vh; padding:32px 16px 64px; }
+  .wrap { max-width: 680px; margin: 0 auto; }
+  .eyebrow { font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:var(--safe); display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .dot { width:7px; height:7px; border-radius:50%; background:var(--safe); box-shadow:0 0 8px var(--safe); animation:pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+  h1 { font-size:28px; font-weight:700; margin:0 0 8px; letter-spacing:-0.01em; }
+  .sub { color:var(--text-dim); font-size:14.5px; line-height:1.55; margin:0 0 28px; max-width:54ch; }
+  .sub b { color:var(--text); font-weight:600; }
+  .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border); border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-bottom:28px; }
+  .stat { background:var(--panel); padding:14px 16px; }
+  .stat-val { font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:700; }
+  .stat-label { font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.06em; margin-top:3px; }
+  .panel { background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:22px; }
+  .panel h2 { font-size:13px; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-dim); margin:0 0 16px; font-weight:600; }
+  .actions { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+  .btn { font-family:'Inter',sans-serif; font-size:13.5px; font-weight:600; padding:10px 16px; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--text); cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:7px; transition:border-color .15s, background .15s; }
+  .btn:hover { border-color:var(--safe); background:rgba(61,220,132,0.06); }
+  .btn-primary { background:var(--safe); color:#06140c; border-color:var(--safe); }
+  .btn-primary:hover { background:#33c976; }
+  .btn-primary:disabled { opacity:0.4; cursor:not-allowed; }
+  .dropzone { border:1.5px dashed var(--border); border-radius:10px; padding:22px; text-align:center; cursor:pointer; transition:border-color .15s, background .15s; margin-bottom:16px; }
+  .dropzone:hover, .dropzone.drag { border-color:var(--safe); background:rgba(61,220,132,0.04); }
+  .dropzone-label { font-size:13.5px; color:var(--text-dim); }
+  .dropzone-file { font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--safe); margin-top:6px; }
+  input[type=file] { display:none; }
+  #status { font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--text-dim); min-height:18px; margin-bottom:4px; }
+  table { width:100%; border-collapse:collapse; margin-top:14px; font-size:13px; }
+  th { text-align:left; padding:8px 10px; font-size:10.5px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-dim); border-bottom:1px solid var(--border); }
+  td { padding:8px 10px; border-bottom:1px solid var(--border); font-family:'JetBrains Mono',monospace; }
+  tr:last-child td { border-bottom:none; }
+  .verdict { display:inline-flex; align-items:center; gap:6px; font-weight:700; }
+  .verdict.fraud { color:var(--alert); }
+  .verdict.genuine { color:var(--safe); }
+  .vdot { width:6px; height:6px; border-radius:50%; }
+  .vdot.fraud { background:var(--alert); }
+  .vdot.genuine { background:var(--safe); }
+  .bar-track { width:60px; height:4px; background:var(--border); border-radius:2px; overflow:hidden; display:inline-block; vertical-align:middle; margin-left:8px; }
+  .bar-fill { height:100%; border-radius:2px; }
+  .note { font-size:12px; color:var(--text-dim); margin-top:18px; line-height:1.6; }
 </style>
 </head>
 <body>
+<div class="wrap">
+
+  <div class="eyebrow"><span class="dot"></span>Model live · scoring in real time</div>
   <h1>Credit Card Fraud Detector</h1>
-  <div class="card">
-    <p>LightGBM model trained with SMOTE on 283K+ real transactions (99.83% imbalance). Upload a CSV of transactions to get fraud predictions for every row.</p>
+  <p class="sub">A <b>LightGBM</b> classifier trained on 283K+ real European card transactions, with <b>SMOTE</b> resampling to handle a 0.17% fraud rate. Upload a batch of transactions below and watch the model flag risk in real time.</p>
 
-    <label>API URL</label><br>
-    <input id="apiUrl" style="width:100%; padding:8px;" value="https://credit-card-fraud-detection-1-92gz.onrender.com/predict_batch">
-
-    <p><a class="btn" href="sample_transactions.csv" download>Download Sample CSV</a></p>
-
-    <input type="file" id="csvFile" accept=".csv"><br>
-    <button onclick="predictBatch()">Upload & Predict</button>
-
-    <div id="results"></div>
+  <div class="stats">
+    <div class="stat"><div class="stat-val">283,726</div><div class="stat-label">Transactions trained</div></div>
+    <div class="stat"><div class="stat-val">0.17%</div><div class="stat-label">Fraud rate</div></div>
+    <div class="stat"><div class="stat-val">0.68</div><div class="stat-label">PR-AUC score</div></div>
   </div>
 
+  <div class="panel">
+    <h2>Batch Scan</h2>
+
+    <div class="actions">
+      <a class="btn" href="sample_transactions.csv" download>↓ Sample transactions.csv</a>
+    </div>
+
+    <div class="dropzone" id="dropzone" onclick="document.getElementById('csvFile').click()">
+      <div class="dropzone-label">Click to choose a CSV, or drag one here</div>
+      <div class="dropzone-file" id="fileLabel"></div>
+    </div>
+    <input type="file" id="csvFile" accept=".csv">
+
+    <button class="btn btn-primary" id="scanBtn" onclick="predictBatch()" disabled>Scan Transactions</button>
+
+    <div id="status" style="margin-top:14px;"></div>
+    <div id="results"></div>
+
+    <p class="note">V1–V28 are PCA-anonymized features — the original bank's raw transaction details can't be shared for privacy reasons, so the model reasons over scrambled principal components rather than named fields like merchant or location.</p>
+  </div>
+
+</div>
+
 <script>
+const API_URL = "https://credit-card-fraud-detection-1-92gz.onrender.com/predict_batch";
+
+const fileInput = document.getElementById('csvFile');
+const dropzone = document.getElementById('dropzone');
+const fileLabel = document.getElementById('fileLabel');
+const scanBtn = document.getElementById('scanBtn');
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length) {
+    fileLabel.textContent = fileInput.files[0].name;
+    scanBtn.disabled = false;
+  }
+});
+
+['dragover', 'dragleave', 'drop'].forEach(evt => {
+  dropzone.addEventListener(evt, e => {
+    e.preventDefault();
+    dropzone.classList.toggle('drag', evt === 'dragover');
+    if (evt === 'drop' && e.dataTransfer.files.length) {
+      fileInput.files = e.dataTransfer.files;
+      fileLabel.textContent = e.dataTransfer.files[0].name;
+      scanBtn.disabled = false;
+    }
+  });
+});
+
 async function predictBatch() {
-  const fileInput = document.getElementById('csvFile');
-  const apiUrl = document.getElementById('apiUrl').value;
-  if (!fileInput.files.length) { alert('Choose a CSV first'); return; }
+  const statusEl = document.getElementById('status');
+  const resultsEl = document.getElementById('results');
+  if (!fileInput.files.length) return;
 
   const formData = new FormData();
   formData.append('file', fileInput.files[0]);
 
-  document.getElementById('results').innerHTML = 'Predicting...';
+  statusEl.textContent = '> scanning transactions...';
+  resultsEl.innerHTML = '';
+  scanBtn.disabled = true;
 
   try {
-    const res = await fetch(apiUrl, {
-      method: 'POST',
-      body: formData
-    });
+    const res = await fetch(API_URL, { method: 'POST', body: formData });
 
     if (!res.ok) {
       const errText = await res.text();
-      document.getElementById('results').innerHTML = 'Server error: ' + errText;
+      statusEl.textContent = '> error';
+      resultsEl.innerHTML = '<p style="color:var(--alert); font-size:13px;">Server error: ' + errText + '</p>';
+      scanBtn.disabled = false;
       return;
     }
 
     const data = await res.json();
+    const fraudCount = data.predictions.filter(p => p.is_fraud).length;
+    statusEl.textContent = '> ' + data.count + ' transactions scanned — ' + fraudCount + ' flagged as fraud';
 
-    let html = '<p>' + data.count + ' transactions scored.</p><table><tr><th>Row</th><th>Fraud Probability</th><th>Verdict</th></tr>';
+    let html = '<table><tr><th>#</th><th>Fraud Probability</th><th>Verdict</th></tr>';
     data.predictions.forEach(function(p) {
-      html += '<tr><td>' + p.row + '</td><td>' + (p.fraud_probability * 100).toFixed(2) + '%</td><td class="' + (p.is_fraud ? 'fraud' : 'genuine') + '">' + (p.is_fraud ? 'Fraud' : 'Genuine') + '</td></tr>';
+      const pct = (p.fraud_probability * 100).toFixed(2);
+      const cls = p.is_fraud ? 'fraud' : 'genuine';
+      const barColor = p.is_fraud ? 'var(--alert)' : 'var(--safe)';
+      html += '<tr><td>' + p.row + '</td>' +
+        '<td>' + pct + '%<span class="bar-track"><span class="bar-fill" style="width:' + pct + '%; background:' + barColor + ';"></span></span></td>' +
+        '<td><span class="verdict ' + cls + '"><span class="vdot ' + cls + '"></span>' + (p.is_fraud ? 'Fraud' : 'Genuine') + '</span></td></tr>';
     });
     html += '</table>';
-    document.getElementById('results').innerHTML = html;
+    resultsEl.innerHTML = html;
   } catch (e) {
-    document.getElementById('results').innerHTML = 'Error: ' + e.message;
+    statusEl.textContent = '> error';
+    resultsEl.innerHTML = '<p style="color:var(--alert); font-size:13px;">' + e.message + '</p>';
+  } finally {
+    scanBtn.disabled = false;
   }
 }
 </script>
